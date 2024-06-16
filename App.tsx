@@ -36,11 +36,11 @@ function App(): React.JSX.Element {
   };
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
           <NavigationContainer>
             <RootNavigator />
           </NavigationContainer>
-    </GestureHandlerRootView>
+    </View>
   );
 }
 

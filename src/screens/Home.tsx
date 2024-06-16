@@ -1,5 +1,5 @@
-import React, {Children, useCallback, useEffect} from "react";
-import { Dimensions, FlatList, Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React from "react";
+import { Animated, Dimensions, FlatList, Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Feather from 'react-native-vector-icons/Feather';
 import { DATA } from "../data";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -7,19 +7,29 @@ import { RootStackParamList } from "../types/typeRoutes";
 
 const { width, height } = Dimensions.get('screen');
 
-const IMAGE_WIDTH = width * 0.85;
-const IMAGE_HEIGHT = IMAGE_WIDTH * 1.5;
-const VISIBLE_ITEM = 4;
 
+const API_KEY = "4qKNNfKjHtkxW3kOwozvLnCX1eXaxuEkDoqHQt9dbc6Kt9Ves8qubWm6"
 
-const data = [...Array(DATA.length).keys()].map((i) => {
-  return{
-    key: String(i),
-    item: DATA[i],
+const API_URL = "https://api.pexels.com/v1/search?query=twins&orientation=portrait&size=small&per_page=20"
 
+const IMAGE_SIZE = 80;
+const SPACING = 10;
+
+const fetchImagesFromPixels = async () => {
+  try {
+    const response = await fetch(API_URL, {
+      headers: {
+        'Authorization': API_KEY
+      }
+    });
+    const data = await response.json();
+    return data.photos;
+  } catch (error) {
+    console.error("Error fetching images:", error);
+    return [];
   }
-});
-
+  
+}
 
 
 
@@ -30,56 +40,135 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 
 const Home:React.FC<Props> = ({navigation}) => {
-  console.log("home");
+
+  const [images, setImages] = React.useState(null)
+  
+
+  
+  React.useEffect(() => {
+    const fetchImages = async () => {
+      const images = await fetchImagesFromPixels()
+      setImages(images)
+      
+    }
+    fetchImages();
+  }, [])
+
+  const topRef = React.useRef<FlatList>(null);
+  const thumbRef = React.useRef<FlatList>(null);
+  const [activeIndex, setActiveIndex] = React.useState<number>(0);
+
+  /*const scrollToActiveIndex = (index: number) =>{
+    setActiveIndex(index);
+    // scroll the main FlatList
+    topRef.current?.scrollToOffset({
+      offset: index * width,
+      animated: true,
+    });
+    // scroll the thumbnail FlatList
+    if (index * (IMAGE_SIZE + SPACING) - IMAGE_SIZE / 2 > width / 2) {
+      thumbRef.current?.scrollToOffset({
+        offset: index * (IMAGE_SIZE + SPACING) - width / 2 + IMAGE_SIZE / 2,
+        animated: true,
+      });
+    } else {
+      thumbRef.current?.scrollToOffset({
+        offset: 0,
+        animated: true,
+      });
+    }
+
+  }*/
+
+  const scrollToActiveIndex = (index: number) =>{
+    setActiveIndex(index)
+    topRef?.current?.scrollToOffset({
+      offset: index * width,
+      animated: true,
+    })
+     // scroll the thumbnail FlatList
+     if (index * (IMAGE_SIZE + SPACING) - IMAGE_SIZE / 2 > width / 2) {
+      thumbRef?.current?.scrollToOffset({
+        offset: index * (IMAGE_SIZE + SPACING) - width / 2 + IMAGE_SIZE / 2,
+        animated: true,
+      });
+    } else {
+      thumbRef.current?.scrollToOffset({
+        offset: 0,
+        animated: true,
+      });
+    }
+    
+  }
+
+
+
+
+  if (!images) {
+    return <Text>Loading...</Text>
+  }
+
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: "#1e1d1d"}}>
-      <StatusBar hidden/>
-      <FlatList 
-        data={data}
-        keyExtractor={item => item.key}
-        contentContainerStyle={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-        CellRendererComponent={({index, item, children, style, ...props}) => {
-          const newStyles = [
-            style,
-            {
-              zIndex: data.length - index,
-              left: -IMAGE_WIDTH / 2,
-              top: -IMAGE_HEIGHT / 2,
-            }
-          ]
-          return(
-            <View key={index} {...props} style={newStyles}>
-              {children}
-            </View>
-          )
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <StatusBar hidden />
+      <FlatList
+        ref={topRef}
+        data={images}
+        keyExtractor={item => item.id.toString()}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={ev => {
+          scrollToActiveIndex(Math.floor(ev.nativeEvent.contentOffset.x / width))
         }}
         renderItem={({item}) => {
           return(
-            <View style={{position: 'absolute'}}>
-              <TouchableOpacity activeOpacity={0.8} onPress={() => {}}>
-                <Image source={{uri: item.item.poster}} style={styles.image}/>
-                <Text style={styles.location}> {item.item.location} </Text>
-              </TouchableOpacity>
+            <View style={{width, height}}>
+              <Image source={{uri: item.src.portrait}}
+                style={[StyleSheet.absoluteFillObject]}
+             />
             </View>
           )
         }}
-      />
-    </SafeAreaView>
+       />
+       <FlatList
+        ref={thumbRef}
+        data={images}
+        keyExtractor={item => item.id.toString()}
+        horizontal
+        style={{position: 'absolute',bottom: IMAGE_SIZE,}}
+        contentContainerStyle={{paddingHorizontal: SPACING}}
+        showsHorizontalScrollIndicator={false}
+        renderItem={({item, index}) => {
+          return(
+              <TouchableOpacity
+               activeOpacity={0.8} 
+               onPress={() => {scrollToActiveIndex(index)}}
+              >
+                <Image source={{uri: item.src.portrait}}
+                style={{
+                  height: IMAGE_SIZE,
+                  width: IMAGE_SIZE,
+                  borderRadius: 12,
+                  marginRight: SPACING,
+                  borderWidth: 2,
+                  borderColor: activeIndex === index ? "#fff" : "transparent"
+                }}
+             />
+              </TouchableOpacity>
+          )
+        }}
+       />
+    </View>
   )
+    
 }
 
 
 
 const styles = StyleSheet.create({
     image:{
-      width: IMAGE_WIDTH,
-      height: IMAGE_HEIGHT,
-      resizeMode: 'cover',
-      borderRadius: 16,
+    
     },
     location:{
       textTransform: 'uppercase',
