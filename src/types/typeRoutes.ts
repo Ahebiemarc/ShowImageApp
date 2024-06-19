@@ -8,7 +8,7 @@ import { DATAPROS } from "../data";
 export type RootStackParamList = {
   Home: undefined;
   Login: undefined;
-  ImageDetails: {item: DATAPROS}
+  //ImageDetails: {item: DATAPROS}
   
   
 };

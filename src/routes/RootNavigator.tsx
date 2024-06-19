@@ -3,14 +3,13 @@ import { RootStackParamList } from "../types/typeRoutes";
 import { View } from "react-native";
 import Home from "../screens/Home";
 import Login from "../screens/Login";
-import ImageDetails from "../screens/ImageDetails";
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 const RootNavigator = () => {
     return (
         <View style={{flex:1}}>
-            <RootStack.Navigator initialRouteName="Home"  >
+            <RootStack.Navigator initialRouteName="Login"  >
             <RootStack.Group
                 screenOptions={{
                     headerShown: false,
@@ -19,7 +18,6 @@ const RootNavigator = () => {
             >
                 <RootStack.Screen name="Home" component={Home}/>
                 <RootStack.Screen name="Login" component={Login} />
-                <RootStack.Screen name="ImageDetails" component={ImageDetails} />
             </RootStack.Group>
         </RootStack.Navigator>
         </View>
